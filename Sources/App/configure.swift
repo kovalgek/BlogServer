@@ -3,10 +3,7 @@ import FluentPostgresDriver
 import Leaf
 import Vapor
 
-// configures your application
 public func configure(_ app: Application) throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
     app.databases.use(.postgres(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -16,12 +13,16 @@ public func configure(_ app: Application) throws {
         database: Environment.get("DATABASE_NAME") ?? "vapor_database"
     ), as: .psql)
 
-    app.migrations.add(CreateTodo())
-
     app.views.use(.leaf)
 
-    
+    app.migrations.add(CreateUser())
+    app.migrations.add(CreatePost())
+    app.migrations.add(CreateCategory())
+    app.migrations.add(CreatePostCategoryPivot())
 
-    // register routes
+    app.logger.logLevel = .debug
+
+    try app.autoMigrate().wait()
+
     try routes(app)
 }
