@@ -14,11 +14,12 @@ public func configure(_ app: Application) throws {
     ), as: .psql)
 
     app.views.use(.leaf)
-
+    
     app.migrations.add(CreateUser())
     app.migrations.add(CreatePost())
     app.migrations.add(CreateCategory())
     app.migrations.add(CreatePostCategoryPivot())
+    app.migrations.add(TestDataPopulation(dataDirectory: app.directory.resourcesDirectory))
 
     app.logger.logLevel = .debug
 
