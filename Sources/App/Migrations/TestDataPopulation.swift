@@ -7,6 +7,7 @@
 
 import Fluent
 import Foundation
+import Vapor
 
 struct TestDataPopulation: Migration {
     
@@ -27,13 +28,15 @@ struct TestDataPopulation: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
                 
         var futures: [EventLoopFuture<Void>] = []
+        let passwords = ["123456", "password", "111111", "qwerty", "abc123", "iloveyou", "password1"]
 
         var userIDs = Set<UUID>()
         let userPlist = (data(for: "users.plist")["data"] as! NSArray) as Array
         userPlist.forEach {
             let userID = UUID()
             userIDs.insert(userID)
-            let user = User(id: userID, name: $0["name"] as! String, username: $0["username"] as! String)
+            let encryptedPassword = try! Bcrypt.hash(passwords.randomElement()!)
+            let user = User(id: userID, name: $0["name"] as! String, username: $0["username"] as! String, password: encryptedPassword)
             futures.append(user.create(on: database))
         }
         

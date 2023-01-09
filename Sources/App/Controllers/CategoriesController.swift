@@ -11,10 +11,14 @@ struct CategoriesController: RouteCollection {
     
     func boot(routes: RoutesBuilder) throws {
         let categoriesRoute = routes.grouped("api", "categories")
-        categoriesRoute.post(use: createHandler)
         categoriesRoute.get(use: getAllHandler)
         categoriesRoute.get(":categoryID", use: getHandler)
         categoriesRoute.get(":categoryID", "posts", use: getPostsHandler)
+        
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = categoriesRoute.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.post(use: createHandler)
     }
 
     func createHandler(_ request: Request) throws -> EventLoopFuture<Category> {

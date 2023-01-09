@@ -11,7 +11,6 @@ import Fluent
 struct CreatePostData: Content {
     let title: String
     let content: String
-    let userID: UUID
 }
 
 struct PostsController: RouteCollection {
@@ -21,18 +20,22 @@ struct PostsController: RouteCollection {
         let postsRoutes = routes.grouped("api", "posts")
 
         postsRoutes.get(use: getAllHandler)
-        postsRoutes.post(use: createHandler)
         postsRoutes.get(":postID", use: getHandler)
-        postsRoutes.put(":postID", use: updateHandler)
-        postsRoutes.delete(":postID", use: deleteHandler)
         postsRoutes.get("search", use: searchHandler)
         postsRoutes.get("first", use: getFirstHandler)
         postsRoutes.get("sorted", use: sortedHandler)
-
         postsRoutes.get(":postID", "user", use: getUserHandler)
-        postsRoutes.post(":postID", "categories", ":categoryID", use: addCategoriesHandler)
         postsRoutes.get(":postID", "categories", use: getCategoriesHandler)
-        postsRoutes.delete(":postID", "categories", ":categoryID", use: removeCategoriesHandler)
+        
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = postsRoutes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.post(use: createHandler)
+        
+        tokenAuthGroup.delete(":postID", "categories", ":categoryID", use: removeCategoriesHandler)
+        tokenAuthGroup.put(":postID", use: updateHandler)
+        tokenAuthGroup.post(":postID", "categories", ":categoryID", use: addCategoriesHandler)
+        tokenAuthGroup.delete(":postID", use: deleteHandler)
     }
 
     func getAllHandler(_ request: Request) throws -> EventLoopFuture<[Post]> {
@@ -41,7 +44,8 @@ struct PostsController: RouteCollection {
 
     func createHandler(_ request: Request) throws -> EventLoopFuture<Post> {
         let data = try request.content.decode(CreatePostData.self)
-        let post = Post(title: data.title, content: data.content, userID: data.userID)
+        let user = try request.auth.require(User.self)
+        let post = try Post(title: data.title, content: data.content, userID: user.requireID())
         return post.save(on: request.db).map { post }
     }
 
@@ -52,11 +56,14 @@ struct PostsController: RouteCollection {
 
     func updateHandler(_ request: Request) throws -> EventLoopFuture<Post> {
         let updateData = try request.content.decode(CreatePostData.self)
+        let user = try request.auth.require(User.self)
+        let userID = try user.requireID()
+
         return Post.find(request.parameters.get("postID"), on: request.db)
             .unwrap(or: Abort(.notFound)).flatMap { post in
                 post.title = updateData.title
                 post.content = updateData.content
-                post.$user.id = updateData.userID
+                post.$user.id = userID
                 return post.save(on: request.db).map {
                     post
                 }
@@ -93,11 +100,11 @@ struct PostsController: RouteCollection {
         return Post.query(on: request.db).sort(\.$title, .ascending).all()
     }
 
-    func getUserHandler(_ request: Request) throws -> EventLoopFuture<User> {
+    func getUserHandler(_ request: Request) throws -> EventLoopFuture<User.Public> {
         Post.find(request.parameters.get("postID"), on: request.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { post in
-                post.$user.get(on: request.db)
+                post.$user.get(on: request.db).convertToPublic()
             }
     }
 

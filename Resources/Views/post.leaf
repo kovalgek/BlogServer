@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>#(title) | Posts</title>
+</head>
+<body>
+  <h1>#(post.title)</h1>
+  <h2>#(post.content)</h2>
+  <p>Created by #(user.name)</p>
+</body>
+</html>

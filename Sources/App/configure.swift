@@ -19,6 +19,8 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreatePost())
     app.migrations.add(CreateCategory())
     app.migrations.add(CreatePostCategoryPivot())
+    app.migrations.add(CreateToken())
+    app.migrations.add(CreateAdminUser())
     app.migrations.add(TestDataPopulation(dataDirectory: app.directory.resourcesDirectory))
 
     app.logger.logLevel = .debug
