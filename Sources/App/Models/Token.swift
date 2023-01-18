@@ -27,6 +27,24 @@ final class Token: Model, Content {
         self.value = value
         self.$user.id = userID
     }
+    
+    final class Public: Content {
+        var id: UUID?
+        var value: String
+        var userID: String
+        
+        init(id: UUID?, value: String, userID: String) {
+            self.id = id
+            self.value = value
+            self.userID = userID
+        }
+    }
+}
+
+extension Token {
+    func convertToPublic() -> Token.Public {
+        Token.Public(id: id, value: value, userID: self.$user.id.uuidString)
+    }
 }
 
 extension Token {

@@ -49,9 +49,9 @@ struct UsersController: RouteCollection {
             }
     }
     
-    func loginHandler(_ req: Request) throws -> EventLoopFuture<Token> {
+    func loginHandler(_ req: Request) throws -> EventLoopFuture<Token.Public> {
         let user = try req.auth.require(User.self)
         let token = try Token.generate(for: user)
-        return token.save(on: req.db).map { token }
+        return token.save(on: req.db).map { token.convertToPublic() }
     }
 }

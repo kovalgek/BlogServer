@@ -31,7 +31,6 @@ struct PostsController: RouteCollection {
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = postsRoutes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         tokenAuthGroup.post(use: createHandler)
-        
         tokenAuthGroup.delete(":postID", "categories", ":categoryID", use: removeCategoriesHandler)
         tokenAuthGroup.put(":postID", use: updateHandler)
         tokenAuthGroup.post(":postID", "categories", ":categoryID", use: addCategoriesHandler)
